@@ -7,15 +7,16 @@
 
 # 2. 配置程序环境
 安装完后打开终端win+r 输入cmd 或者在电脑左下角直接搜索cmd
-分别执行以下指令
-# 这个是将镜像源替换为阿里的 这样执行后续指令 下载会更快
-pip install requests -i https://mirrors.aliyun.com/pypi/simple/
+分别执行以下指令 复制粘贴到终端执行即可
+## 这个是将镜像源替换为阿里的 这样执行后续指令 下载会更快
+pip install requests -i https://mirrors.aliyun.com/pypi/simple/<br/>
 
-pip install opencv-python
-pip install pyautogui
-pip install mss
-pip install pyqt6
-pip install cv2
+## 这些是运行所需的库
+pip install opencv-python<br/>
+pip install pyautogui<br/>
+pip install mss<br/>
+pip install pyqt6<br/>
+pip install cv2<br/>
 
 
 # 3. 运行脚本
