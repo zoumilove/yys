@@ -9,7 +9,7 @@
 安装完后打开终端win+r 输入cmd 或者在电脑左下角直接搜索cmd
 分别执行以下指令 复制粘贴到终端执行即可
 ## 这个是将镜像源替换为阿里的 这样执行后续指令 下载会更快
-pip install requests -i https://mirrors.aliyun.com/pypi/simple/<br/>
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/<br/>
 
 ## 这些是运行所需的库
 pip install opencv-python<br/>
