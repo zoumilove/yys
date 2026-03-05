@@ -20,10 +20,10 @@ pip install cv2<br/>
 
 
 # 3. 运行脚本
+## 通过修改config.ini 内 Nthread的值可以修改需要的线程数量
 Windows系统直接双击运行`start.bat`。推荐使用雷电模拟器因为会自动设置ADB地址，MuMu模拟器会相对麻烦一些需要手动输入ADB端口。<br/>
 
 在挂机刷活动爬塔的时候 每一期都需要重新截取活动挑战按钮的图片 通过 运行脚本界面0 屏幕截图在这个截取的图内自己另外截一次图qq截图啊微信截图啊 截取挑战按钮部分字样 然后另存到yys/png文件夹下 替换掉hd_tz.png这张图片
 
 # 4. 游戏设置
-关闭游戏里的“战斗结算个性化”选项，否则刷御魂副本会卡在结算界面：
-<img width="596" alt="image" src="https://github.com/user-attachments/assets/c0bc662c-682e-4200-8fed-6df0cff03666" />
+关闭游戏里的“战斗结算个性化”选项，否则刷御魂副本会卡在结算界面
