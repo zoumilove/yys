@@ -262,7 +262,7 @@ class Worker(QObject):
         last_click = ''
         move_count = 0
         boss_done = False
-        move_directions = [(300, 200), (400, 200), (500, 200), (600, 220), (700, 220), (800, 220)]
+        move_directions = [(600, 200), (620, 200), (610, 200), (600, 220), (620, 220), (630, 220)]
 
         while self.isRunning:
             screen = action.screenshot(self.thread_id)
@@ -286,12 +286,14 @@ class Worker(QObject):
             # 地图中小怪检测
             if action.locate(screen, self.imgs['guding'], 0):
                 found, pts, h, w = self._find_img(screen, cfg['map_targets'])
+                if not found:
+                    self.message_output(f'地图无目标,need_move={cfg["need_move"]},boss_done={boss_done}')
                 if found:
-                    if 'boss' in found:
-                        boss_done = True
+                    # if 'boss' in found:
+                        # boss_done = True
                     if cfg['need_exit'] and refresh > 3:
                         self.message_output('重复点击过多，退出')
-                        boss_done = True
+                        # boss_done = True
                     else:
                         self.message_output(f'点击{found}')
                         xy = action.cheat(pts, w, h)
@@ -306,9 +308,10 @@ class Worker(QObject):
                         move_count += 1
                         if move_count > cfg['max_move']:
                             self.message_output('移动次数过多，尝试退出探索')
-                            boss_done = True
+                            # boss_done = True
                             if not cfg['need_exit']: continue
                         direction = random.choice(move_directions)
+                        self.message_output(f'移动至:{direction}')
                         xy = action.cheat(direction, 30, 30)
                         action.touch(xy, self.thread_id)
                         if self.sleep_fast(0.3): return
