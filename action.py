@@ -2,6 +2,12 @@ import cv2,time,os,random,sys,mss,copy,subprocess,pyautogui
 import numpy
 from PyQt6.QtWidgets import QMessageBox,QPushButton,QInputDialog
 
+# 获取资源基础路径（兼容打包后的exe）
+def get_base_path():
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        return sys._MEIPASS
+    return os.path.dirname(os.path.abspath(__file__))
+
 #global variables
 devices_tab=[None]
 adb_enable=[False]
@@ -37,7 +43,7 @@ def startup(window):
     #检测ADB
     if sys.platform=='win32':
         textBrowser.append('检测模拟器')
-        mumu_path="C:\\Program Files\\Netease\\MuMuPlayer-12.0\\shell\\adb.exe"
+        mumu_path="D:\\mumu\\MuMuPlayer\\nx_main\\adb.exe"
         ld_path="C:\\leidian\\LDPlayer9\\adb.exe"
         if os.path.isfile(ld_path):
             textBrowser.append('检测到雷电模拟器')
@@ -276,7 +282,7 @@ def locate(target,want, show=bool(0), msg=bool(0)):
 def load_imgs(game_name):
     mubiao = {}
     acc=0.95
-    path = os.getcwd()+'/'+game_name+'/png'
+    path = os.path.join(get_base_path(), game_name, 'png')
     file_list = os.listdir(path)
     for file in file_list:
         if not file.lower().endswith(('.png', '.jpg', '.jpeg')):
@@ -313,9 +319,9 @@ def cut(screen,upleft,downright):
 def cheat(p, w, h):
     a,b = p
     if scalar:
-        w, h = int(w/3/2), int(h/3/2)
+        w, h = int(w/6), int(h/6)
     else:
-        w, h = int(w/3), int(h/3)
+        w, h = int(w/6), int(h/6)
     if h<0:
         h=1
     c,d = random.randint(-w, w),random.randint(-h, h)

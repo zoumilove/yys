@@ -48,7 +48,9 @@ class Worker(QObject):
         {'description':'3 探索(单刷)','func_name':self.tansuofunc,'count_default':3000},\
         {'description':'4 契灵单刷','func_name':self.qilingfunc,'count_default':3000},\
         {'description':'5 御魂司机','func_name':self.yuhunfunc1,'count_default':3000},\
-        {'description':'6 御魂打手','func_name':self.yuhunfunc2,'count_default':3000}]
+        {'description':'6 御魂打手','func_name':self.yuhunfunc2,'count_default':3000},\
+        {'description':'7 探索组队（司机）','func_name':self.tansuo_driver_func,'count_default':3000},\
+        {'description':'8 探索组队（打手）','func_name':self.tansuo_fighter_func,'count_default':3000}]
         #功能序号
         self.index=index
         self.cishu_max=cishu_max
@@ -211,134 +213,160 @@ class Worker(QObject):
                     action.touch(xy,self.thread_id)
                     if self.sleep_fast(t): return
                     break
-     
-    ########################################################
-    #探索单刷
-    def tansuofunc(self):
-        last_click=''
-        cishu=0
-        refresh=0
-        right = (754, 420)
-        
-        boss_done=False
-        while self.isRunning:   #直到取消，或者出错
-            #截屏
-            screen=action.screenshot(self.thread_id)
-            
-            #体力不足
-            want = self.imgs['notili']
-            size = want[0].shape
-            h, w , ___ = size
-            target = screen
-            pts = action.locate(target,want,0)
-            if not len(pts) == 0:
+
+    #============================================================
+    # 探索模块 - 配置定义
+    #============================================================
+    class TansuoMode:
+        """探索模式配置"""
+        SINGLE = 0      # 单刷
+        DRIVER = 1     # 司机
+        FIGHTER = 2    # 打手
+
+    # 探索模式配置表
+    TANSUO_CONFIG = {
+        TansuoMode.SINGLE: {
+            'count_key': 'tansuo',          # 计次图标
+            'map_targets': ['boss', 'jian', 'jian2', 'boss2', 'ts_baoxiang'],
+            'menu_targets': ['jujue', 'querenyuhun', 'tansuo', 'ying', 'jiangli', 'jixu', 'c28', 'ditu', 'ts_baoxiang', 'ts_hdjl'],
+            'need_move': True,              # 需要随机移动
+            'need_exit': True,              # 需要退出探索
+            'max_refresh': 6,
+            'max_move': 50,
+        },
+        TansuoMode.DRIVER: {
+            'count_key': 'tansuo',
+            'map_targets': ['kb', 'jian2', 'boss', 'jian', 'boss2', 'ts_baoxiang', 'hdjl'],
+            'menu_targets': ['tansuo', 'jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'c28', 'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd', 'zd_tz', 'kb', 'zd_tz2', 'hdjl'],
+            'need_move': True,
+            'need_exit': False,
+            'max_refresh': 6,
+            'max_move': 50,
+        },
+        TansuoMode.FIGHTER: {
+            'count_key': None,
+            'map_targets': ['ts_baoxiang','hdjl'],
+            'menu_targets': ['jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd','hdjl'],
+            'need_move': False,
+            'need_exit': False,
+            'max_refresh': 6,
+            'max_move': 0,
+        },
+    }
+
+    def _tansuo_loop(self, mode):
+        """探索主循环 - 统一的探索逻辑"""
+        cfg = self.TANSUO_CONFIG[mode]
+        cishu = 0
+        refresh = 0
+        last_click = ''
+        move_count = 0
+        boss_done = False
+        move_directions = [(300, 200), (400, 200), (500, 200), (600, 220), (700, 220), (800, 220)]
+
+        while self.isRunning:
+            screen = action.screenshot(self.thread_id)
+
+            # 体力检测
+            if action.locate(screen, self.imgs.get('notili', [None]), 0):
                 self.message_output('体力不足')
                 return
 
-            want = self.imgs['queren']
-            size = want[0].shape
-            h, w , ___ = size
-            target = screen
-            #x1,x2 = upleft, (965, 522)
-            #target = action.cut(screen, x1, x2)
-            pts = action.locate(target,want,0)
-            if not len(pts) == 0:
-                self.message_output('确认退出')
-                try:
-                    queding = pts[1]
-                except:
-                    queding = pts[0]
-                xy = action.cheat(queding, w, h)
-                action.touch(xy,self.thread_id)
-                t = random.randint(15,30) / 100
-                if self.sleep_fast(t): return
-
-            
-            #设定目标，开始查找
-            #进入后
-            want=self.imgs['guding']
-
-            pts = action.locate(screen,want,0)
-            if not len(pts) == 0:
-                #self.message_output('正在地图中')
-                for i in ['boss', 'jian','jian2','boss2']:
-                    want = self.imgs[i]
-                    size = want[0].shape
-                    h, w , ___ = size
-                    target = screen
-                    pts = action.locate(target,want,0)
-                    if not len(pts) == 0:
-                        if 'boss' in i:
-                            boss_done=True
-                            i='jian'
-                        if last_click==i:
-                            refresh=refresh+1
-                        else:
-                            refresh=0
-                        last_click=i
-                        #self.message_output('重复次数：',refresh)
-                        if refresh>3:
-                            self.message_output('进攻次数上限')
-                            return
-                        
-                        self.message_output('点击小怪'+i)
-                        xy = action.cheat(pts[0], w, h)
-                        action.touch(xy,self.thread_id)
-                        time.sleep(0.5)
-                        break
-
-                if len(pts)==0:
-                    if not boss_done:
-                        self.message_output('向右走')
-                        xy = action.cheat(right, 10, 10)
-                        action.touch(xy,self.thread_id)
-                        t = random.randint(100,300) / 100
-                        if self.sleep_fast(t): return
-                        continue
-                    else:
-                        i='tuichu'
-                        want = self.imgs[i]
-                        size = want[0].shape
-                        h, w , ___ = size
-                        pts = action.locate(screen,want,0)
-                        if not len(pts) == 0:
-                            self.message_output('退出中'+i)
-                            if len(pts) > 0:
-                                queding = pts[0]  # 始终取第一个匹配点
-                            else:
-                                return  # 或 return
-                            xy = action.cheat(queding, w, h)
-                            action.touch(xy,self.thread_id)
-                            t = random.randint(50,80) / 100
-                            if self.sleep_fast(t): return
+            # 单刷专属：退出确认
+            if mode == self.TansuoMode.SINGLE:
+                pts = action.locate(screen, self.imgs.get('queren', [None]), 0)
+                if pts:
+                    self.message_output('确认退出')
+                    h, w = self.imgs['queren'][0].shape[:-1]
+                    xy = action.cheat(pts[1] if len(pts) > 1 else pts[0], w, h)
+                    action.touch(xy, self.thread_id)
+                    if self.sleep_fast(0.2): return
                     continue
 
-            for i in ['jujue','querenyuhun',\
-                      'tansuo','ying','jiangli','jixu','c28','ditu','ts_baoxiang','ts_hdjl']:
-                want = self.imgs[i]
-                size = want[0].shape
-                h, w , ___ = size
-                target = screen
-                pts = action.locate(target,want,0)
-                if not len(pts) == 0:
-                    if last_click==i:
-                        refresh=refresh+1
+            # 地图中小怪检测
+            if action.locate(screen, self.imgs['guding'], 0):
+                found, pts, h, w = self._find_img(screen, cfg['map_targets'])
+                if found:
+                    if 'boss' in found:
+                        boss_done = True
+                    if cfg['need_exit'] and refresh > 3:
+                        self.message_output('重复点击过多，退出')
+                        boss_done = True
                     else:
-                        refresh=0
-                    last_click=i
-                    #self.message_output('重复次数：',refresh)
-                    if refresh==0 and i=='tansuo':
-                        cishu=cishu+1
-                        self.message_output('探索次数：'+str(cishu)+'/'+str(self.cishu_max))
-                    if refresh>6 or cishu>self.cishu_max:
-                        self.message_output('进攻次数上限')
-                        return
-                    self.message_output(i)
-                    xy = action.cheat(pts[0], w, h )
-                    action.touch(xy,self.thread_id)
-                    t = random.randint(15,30) / 100
-                    if self.sleep_fast(t): return
-                    break
+                        self.message_output(f'点击{found}')
+                        xy = action.cheat(pts, w, h)
+                        action.touch(xy, self.thread_id)
+                        if self.sleep_fast(0.5 if 'baoxiang' in found else 0.5): return
+                    last_click = found
+                    continue
+
+                # 地图中未找到目标
+                if cfg['need_move']:
+                    if not boss_done:
+                        move_count += 1
+                        if move_count > cfg['max_move']:
+                            self.message_output('移动次数过多，尝试退出探索')
+                            boss_done = True
+                            if not cfg['need_exit']: continue
+                        direction = random.choice(move_directions)
+                        xy = action.cheat(direction, 30, 30)
+                        action.touch(xy, self.thread_id)
+                        if self.sleep_fast(0.3): return
+                    elif cfg['need_exit']:
+                        pts = action.locate(screen, self.imgs.get('tuichu', [None]), 0)
+                        if pts:
+                            self.message_output('退出探索')
+                            xy = action.cheat(pts[0], w, h)
+                            action.touch(xy, self.thread_id)
+                            if self.sleep_fast(0.6): return
+                            boss_done = False
+                            move_count = 0
+                # 检测到guding时表示在地图界面，无论是否找到目标都continue
+                # 避免在地图上时误触菜单按钮
+                continue
+
+            # 结算/菜单界面
+            found, pts, h, w = self._find_img(screen, cfg['menu_targets'])
+            if found:
+                new_refresh = refresh + 1 if last_click == found else 0
+                # 计次
+                if cfg['count_key'] and found == cfg['count_key'] and new_refresh == 0:
+                    cishu += 1
+                    self.message_output(f'探索次数：{cishu}/{self.cishu_max}')
+                if new_refresh > cfg['max_refresh'] or cishu > self.cishu_max:
+                    self.message_output('次数已达上限')
+                    return
+                self.message_output(found)
+                xy = action.cheat(pts, w, h - 10)
+                action.touch(xy, self.thread_id)
+                t = random.randint(*self.random_time.get(found, [15, 30])) / 100
+                last_click = found
+                refresh = new_refresh
+                if self.sleep_fast(t): return
+
+    def _find_img(self, screen, targets):
+        """在screen中查找targets列表中的第一个匹配图像，返回(name, pts, h, w)或(None, None, None, None)"""
+        for name in targets:
+            if name not in self.imgs:
+                continue
+            want = self.imgs[name]
+            pts = action.locate(screen, want, 0)
+            if pts:
+                h, w = want[0].shape[:-1]
+                return name, pts[0], h, w
+        return None, None, None, None
+
+    def tansuo_driver_func(self):
+        """探索组队（司机）"""
+        self._tansuo_loop(self.TansuoMode.DRIVER)
+
+    def tansuo_fighter_func(self):
+        """探索组队（打手）"""
+        self._tansuo_loop(self.TansuoMode.FIGHTER)
+
+    def tansuofunc(self):
+        """探索单刷"""
+        self._tansuo_loop(self.TansuoMode.SINGLE)
 
 
     ########################################################
@@ -462,11 +490,11 @@ class Worker(QObject):
         last_click=''
         cishu=0
         refresh=0
-        
+
         while self.isRunning:   #直到取消，或者出错
             #截屏
             screen=action.screenshot(self.thread_id)
-            
+
             #体力不足
             want = self.imgs['notili']
             size = want[0].shape
@@ -506,4 +534,6 @@ class Worker(QObject):
                     action.touch(xy,self.thread_id)
                     if self.sleep_fast(t): return
                     break
-     
+
+
+

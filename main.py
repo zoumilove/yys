@@ -19,6 +19,12 @@ import action
 #global variables
 mutex = QMutex()
 
+# 获取资源基础路径（兼容打包后的exe）
+def get_base_path():
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        return sys._MEIPASS
+    return os.path.dirname(os.path.abspath(__file__))
+
 ####################################################
 #多线程
 class MyThread(QThread):
@@ -39,7 +45,7 @@ class MyThread(QThread):
 class MainWindow(QMainWindow):
     def __init__(self,nthread):
         super().__init__()
-        loadUi('main.ui', self)
+        loadUi(os.path.join(get_base_path(), 'main.ui'), self)
         self.setWindowTitle(game_name+'脚本 - test')
         self.nthread=nthread
         self.tab=[None]*self.nthread
@@ -50,7 +56,7 @@ class MainWindow(QMainWindow):
         self.isRunning=[False]*self.nthread
         # Create tabs and load the same UI file into each
         for i in range(self.nthread):
-            self.tab[i]=loadUi('main.ui')
+            self.tab[i]=loadUi(os.path.join(get_base_path(), 'main.ui'))
             self.tabWidget.addTab(self.tab[i], f'设备{i+1}：桌面版')
             #self.tab[i].pushButton_start.clicked.connect(lambda thread_id=i: self.start_stop(thread_id))
             self.tab[i].pushButton_start.clicked.connect(partial(self.start_stop, thread_id=i))
@@ -237,13 +243,15 @@ class MainWindow(QMainWindow):
 ####################################################
 if __name__ == '__main__':
     #初始化设置
-    config_path='config.ini'
+    base_path = get_base_path()
+    config_path=os.path.join(base_path, 'config.ini')
     if os.path.exists(config_path):
         print("config.ini")
     else:
         print("未找到config.ini")
         print(os.getcwd())
-        exit(1)
+        print("base_path:", base_path)
+        sys.exit(1)
     config = configparser.ConfigParser(inline_comment_prefixes=';')
     config.sections()
     config.read(config_path)
@@ -255,7 +263,10 @@ if __name__ == '__main__':
     #debug模式
     if config['general']['debug'].lower() in ['true', '1', 'yes'] or args.debug['general']['debug'].lower() in ['true', '1', 'yes']:
         import faulthandler
-        faulthandler.enable()
+        try:
+            faulthandler.enable()
+        except (ValueError, AttributeError, RuntimeError):
+            pass  # stderr may be None in GUI mode
     #游戏名
     game_name=config['general']['game']
     if args.game:
