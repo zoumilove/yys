@@ -231,8 +231,8 @@ class Worker(QObject):
             'menu_targets': ['jujue', 'querenyuhun', 'tansuo', 'ying', 'jiangli', 'jixu', 'c28', 'ditu', 'ts_baoxiang', 'ts_hdjl'],
             'need_move': True,              # 需要随机移动
             'need_exit': True,              # 需要退出探索
-            'max_refresh': 6,
-            'max_move': 50,
+            'max_refresh': 3000,
+            'max_move': 3000,
         },
         TansuoMode.DRIVER: {
             'count_key': 'tansuo',
@@ -240,8 +240,8 @@ class Worker(QObject):
             'menu_targets': ['tansuo', 'jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'c28', 'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd', 'zd_tz', 'kb', 'zd_tz2', 'hdjl'],
             'need_move': True,
             'need_exit': False,
-            'max_refresh': 6,
-            'max_move': 50,
+            'max_refresh': 3000,
+            'max_move': 3000,
         },
         TansuoMode.FIGHTER: {
             'count_key': None,
@@ -249,8 +249,8 @@ class Worker(QObject):
             'menu_targets': ['jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd','hdjl'],
             'need_move': False,
             'need_exit': False,
-            'max_refresh': 6,
-            'max_move': 0,
+            'max_refresh': 3000,
+            'max_move': 3000,
         },
     }
 
