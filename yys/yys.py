@@ -31,13 +31,14 @@ class Worker(QObject):
             'qiling_sj': [100, 150],
             'qiling_fq': [100, 150],
             'lt_ks': [100, 150],
+            'lt_xz': [100, 150],
             'lt_jg': [100, 150],
             'lt_jl': [100, 150],
         }
 
         self.event_list = {
             'qiling':['qiling_tz','qiling_sj','qiling_fq','qiling_jl'],
-            'liaotu':['lt_ks','lt_jg','qiling_jl'],
+            'liaotu':['lt_xz','lt_ks','lt_jg','qiling_jl'],
         }
 
         self.thread_id = thread_id
@@ -91,9 +92,7 @@ class Worker(QObject):
     
     #   寮突
     def liaotufunc(self):
-        last_click=''
         cishu=0
-        refresh=0
         new_msg = ""
         # # 截取模拟器屏幕 查看图片内容
         # import cv2,pyautogui
@@ -108,6 +107,7 @@ class Worker(QObject):
         # cv2.destroyAllWindows()
         # return
         flag_list = {
+            'lt_xz':False,
             'lt_ks':False,
             'lt_jg':False,
             'qiling_jl':False
@@ -117,7 +117,7 @@ class Worker(QObject):
         while self.isRunning:   #直到取消，或者出错
             #截屏
             screen=action.screenshot(self.thread_id)
-            for i in ['lt_ks','lt_jg','qiling_jl']:
+            for i in ['lt_xz','lt_ks','lt_jg','qiling_jl']:
                 want=self.imgs[i]
                 size = want[0].shape
                 h, w , ___ = size
@@ -125,19 +125,12 @@ class Worker(QObject):
                 pts=action.locate(target,want,0)
                 if not flag_list[i]:
                     if not len(pts)==0:
-                        if last_click==i:
-                            refresh=refresh+1
-                        else:
-                            refresh=0
-                        
-                        last_click=i
                         self.message_output(f"当前点击事件：{i}({self.click_name[i]})")
                         self.message_output(f"识别到的坐标点:{pts}")
                         # self.message_output(f"长度:{len(pts)}")
                         
-                        if i=='lt_ks':
-                            if refresh==0:
-                                cishu=cishu+1
+                        if i=='lt_ks' or i == 'lt_xz':
+                            cishu=cishu+1
                             self.message_output('挑战次数：'+str(cishu))
 
                         flag_list[i] = True
@@ -146,6 +139,7 @@ class Worker(QObject):
 
                         if i == 'qiling_jl':
                             flag_list = {
+                                'lt_xz':False,
                                 'lt_ks':False,
                                 'lt_jg':False,
                                 'qiling_jl':False
@@ -166,24 +160,10 @@ class Worker(QObject):
     ########################################################
     #御魂/御灵单刷
     def yuhunfunc(self):
-        last_click=''
         cishu=0
-        refresh=0
-        
         while self.isRunning:   #直到取消，或者出错
             #截屏
             screen=action.screenshot(self.thread_id)
-            
-            #体力不足
-            want = self.imgs['notili']
-            size = want[0].shape
-            h, w , ___ = size
-            target = screen
-            pts = action.locate(target,want,0)
-            if not len(pts) == 0:
-                self.message_output('体力不足')
-                return
-
             for i in ['jujue','querenyuhun','zhidao','ying','jiangli','jiangli2','jixu','zhunbei','guanbi',\
                       'tiaozhan','tiaozhan2','tiaozhan3','queding','tancha','shibai','yj_tz','hd_tz']:
                 want=self.imgs[i]
@@ -192,21 +172,15 @@ class Worker(QObject):
                 target=screen
                 pts=action.locate(target,want,0)
                 if not len(pts)==0:
-                    if last_click==i:
-                        refresh=refresh+1
-                    else:
-                        refresh=0
-                    last_click=i
                     #self.message_output('重复次数：',refresh)
                     self.message_output(i)
                     if i == 'tiaozhan' or i=='tiaozhan2' or i=='tiaozhan3' or i=='tancha' or i=='yj_tz' or i=='hd_tz':
-                        if refresh==0:
-                            cishu=cishu+1
+                        cishu=cishu+1
                         self.message_output('挑战次数：'+str(cishu)+'/'+str(self.cishu_max))
                         t = random.randint(500,800) / 100
                     else:
                         t = random.randint(15,30) / 100
-                    if refresh>6 or cishu>self.cishu_max:
+                    if cishu>self.cishu_max:
                         self.message_output('进攻次数上限')
                         return
                     xy = action.cheat(pts[0], w, h-10 )
@@ -380,9 +354,7 @@ class Worker(QObject):
     #   2.结契失败（放弃结契）
     #   3.结契成功（继续挑战）
     def qilingfunc(self):
-        last_click=''
         cishu=0
-        refresh=0
         new_msg = ""
         # 截取模拟器屏幕 查看图片内容
         # import cv2,pyautogui
@@ -407,19 +379,12 @@ class Worker(QObject):
                 target=screen
                 pts=action.locate(target,want,0)
                 if not len(pts)==0:
-                    if last_click==i:
-                        refresh=refresh+1
-                    else:
-                        refresh=0
-                    last_click=i
-
                     self.message_output(f"当前点击事件：{i}({self.click_name[i]})")
                     self.message_output(f"识别到的坐标点:{pts}")
                     self.message_output(f"长度:{len(pts)}")
                     
                     if i=='qiling_tz':
-                        if refresh==0:
-                            cishu=cishu+1
+                        cishu=cishu+1
                         self.message_output('挑战次数：'+str(cishu)+'/'+str(self.cishu_max))
 
                     #获取随机数 延迟点击
@@ -438,104 +403,43 @@ class Worker(QObject):
 
     #御魂司机
     def yuhunfunc1(self):
-        last_click=''
-        cishu=0
-        refresh=0
-        
-        while self.isRunning:   #直到取消，或者出错
-            #截屏
-            screen=action.screenshot(self.thread_id)
-            
-            #体力不足
-            want = self.imgs['notili']
-            size = want[0].shape
-            h, w , ___ = size
-            target = screen
-            pts = action.locate(target,want,0)
-            if not len(pts) == 0:
-                self.message_output('体力不足')
-                return
+        img_list = ['jujue','querenyuhun','zhidao','ying','jiangli','jiangli2','jixu','zhunbei','guanbi',
+                     'tiaozhan','tiaozhan2','tiaozhan3','queding','tancha','shibai','zd_tz']
+        self._yuhun_common(img_list)
 
-            for i in ['jujue','querenyuhun','zhidao','ying','jiangli','jiangli2','jixu','zhunbei','guanbi',\
-                      'tiaozhan','tiaozhan2','tiaozhan3','queding','tancha','shibai','zd_tz']:
-                want=self.imgs[i]
-                size = want[0].shape
-                h, w , ___ = size
-                target=screen
-                pts=action.locate(target,want,0)
-                if not len(pts)==0:
-                    if last_click==i:
-                        refresh=refresh+1
-                    else:
-                        refresh=0
-                    last_click=i
-                    #self.message_output('重复次数：',refresh)
-                    self.message_output(i)
-                    if i == 'tiaozhan' or i=='tiaozhan2' or i=='tiaozhan3' or i=='tancha':
-                        if refresh==0:
-                            cishu=cishu+1
-                        self.message_output('挑战次数：'+str(cishu)+'/'+str(self.cishu_max))
-                        t = random.randint(500,800) / 100
-                    else:
-                        t = random.randint(15,30) / 100
-                    if refresh>6 or cishu>self.cishu_max:
-                        self.message_output('进攻次数上限')
-                        return
-                    xy = action.cheat(pts[0], w, h-10 )
-                    action.touch(xy,self.thread_id)
-                    if self.sleep_fast(t): return
-                    break
-     
-        #御魂司机
-   
     #御魂打手
     def yuhunfunc2(self):
-        last_click=''
-        cishu=0
-        refresh=0
+        img_list = ['jujue','querenyuhun','zhidao','ying','jiangli','jiangli2','jixu','zhunbei','guanbi',
+                     'tiaozhan','tiaozhan2','tiaozhan3','queding','tancha','shibai','zd_qd']
+        self._yuhun_common(img_list)
 
-        while self.isRunning:   #直到取消，或者出错
-            #截屏
-            screen=action.screenshot(self.thread_id)
+    def _yuhun_common(self, img_list):
+        cishu = 0
+        tiaozhan_set = {'tiaozhan', 'tiaozhan2', 'tiaozhan3', 'tancha'}
 
-            #体力不足
-            want = self.imgs['notili']
-            size = want[0].shape
-            h, w , ___ = size
-            target = screen
-            pts = action.locate(target,want,0)
-            if not len(pts) == 0:
-                self.message_output('体力不足')
-                return
-
-            for i in ['jujue','querenyuhun','zhidao','ying','jiangli','jiangli2','jixu','zhunbei','guanbi',\
-                      'tiaozhan','tiaozhan2','tiaozhan3','queding','tancha','shibai','zd_qd']:
-                want=self.imgs[i]
+        while self.isRunning:
+            screen = action.screenshot(self.thread_id)
+            for i in img_list:
+                want = self.imgs[i]
                 size = want[0].shape
-                h, w , ___ = size
-                target=screen
-                pts=action.locate(target,want,0)
-                if not len(pts)==0:
-                    if last_click==i:
-                        refresh=refresh+1
-                    else:
-                        refresh=0
-                    last_click=i
-                    #self.message_output('重复次数：',refresh)
+                h, w, ___ = size
+                target = screen
+                pts = action.locate(target, want, 0)
+                if pts:
                     self.message_output(i)
-                    if i == 'tiaozhan' or i=='tiaozhan2' or i=='tiaozhan3' or i=='tancha':
-                        if refresh==0:
-                            cishu=cishu+1
-                        self.message_output('挑战次数：'+str(cishu)+'/'+str(self.cishu_max))
-                        t = random.randint(500,800) / 100
+                    if i in tiaozhan_set:
+                        cishu += 1
+                        self.message_output(f'挑战次数：{cishu}/{self.cishu_max}')
+                        t = random.randint(500, 800) / 100
                     else:
-                        t = random.randint(15,30) / 100
-                    if refresh>6 or cishu>self.cishu_max:
+                        t = random.randint(15, 30) / 100
+                    if cishu > self.cishu_max:
                         self.message_output('进攻次数上限')
                         return
-                    xy = action.cheat(pts[0], w, h-10 )
-                    action.touch(xy,self.thread_id)
-                    if self.sleep_fast(t): return
+                    xy = action.cheat(pts[0], w, h - 10)
+                    action.touch(xy, self.thread_id)
+                    if self.sleep_fast(t):
+                        return
                     break
 
 
