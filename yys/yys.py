@@ -50,9 +50,9 @@ class Worker(QObject):
         {'description':'3 探索(单刷)','func_name':self.tansuofunc,'count_default':3000},\
         {'description':'4 契灵单刷','func_name':self.qilingfunc,'count_default':3000},\
         {'description':'5 御魂司机','func_name':self.yuhunfunc1,'count_default':3000},\
-        {'description':'6 御魂打手','func_name':self.yuhunfunc2,'count_default':3000},\
+        {'description':'6 御魂打手','func_name':self.yuhunfunc2,'count_default':'inf'},\
         {'description':'7 探索组队（司机）','func_name':self.tansuo_driver_func,'count_default':3000},\
-        {'description':'8 探索组队（打手）','func_name':self.tansuo_fighter_func,'count_default':3000}]
+        {'description':'8 探索组队（打手）','func_name':self.tansuo_fighter_func,'count_default':'inf'}]
         #功能序号
         self.index=index
         self.cishu_max=cishu_max
@@ -215,7 +215,7 @@ class Worker(QObject):
             'max_move': 3000,
         },
         TansuoMode.FIGHTER: {
-            'count_key': None,
+            'count_key': 'tansuo',
             'map_targets': ['ts_baoxiang','hdjl'],
             'menu_targets': ['jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd','hdjl'],
             'need_move': False,
@@ -233,15 +233,10 @@ class Worker(QObject):
         last_click = ''
         move_count = 0
         boss_done = False
-        move_directions = [(600, 200), (620, 200), (610, 200), (600, 220), (620, 220), (630, 220)]
+        move_directions = [(600, 180), (600, 180), (600, 200), (600, 180), (600, 200), (600, 200)]
 
         while self.isRunning:
             screen = action.screenshot(self.thread_id)
-
-            # 体力检测
-            if action.locate(screen, self.imgs.get('notili', [None]), 0):
-                self.message_output('体力不足')
-                return
 
             # 单刷专属：退出确认
             if mode == self.TansuoMode.SINGLE:
