@@ -228,23 +228,28 @@ def screenshot(thread_id):
     #all else failed
     if screen is None:
         return screen
+    # mss returns BGRA (4 channels) on Windows, need to convert properly
+    if len(screen.shape) == 3 and screen.shape[2] == 4:
+        screen = cv2.cvtColor(screen, cv2.COLOR_BGRA2BGR)
     screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
     return screen
 
 #在背景查找目标图片，并返回查找到的结果坐标列表，target是背景，want是要找目标
 def locate(target,want, show=bool(0), msg=bool(0)):
     loc_pos=[]
-    want,treshold,c_name=want[0],want[1],want[2]
-    if target is None:
+    want_img,treshold,c_name=want[0],want[1],want[2]
+    if target is None or want_img is None:
         return loc_pos
-    result=cv2.matchTemplate(target,want,cv2.TM_CCOEFF_NORMED)
+    if not isinstance(target, numpy.ndarray) or not isinstance(want_img, numpy.ndarray):
+        return loc_pos
+    result=cv2.matchTemplate(target,want_img,cv2.TM_CCOEFF_NORMED)
     location=numpy.where(result>=treshold)
     #textBrowser.append(location)
 
     if msg:  #显示正式寻找目标名称，调试时开启
         textBrowser.append(c_name,'searching... ')
 
-    h,w=want.shape[:-1] #want.shape[:-1]
+    h,w=want_img.shape[:-1]
 
     n,ex,ey=1,0,0
     for pt in zip(*location[::-1]):    #其实这里经常是空的
@@ -289,7 +294,10 @@ def load_imgs(game_name):
             continue
         name = file.split('.')[0]
         file_path = path + '/' + file
-        a = [cv2.cvtColor(cv2.imread(file_path),cv2.COLOR_BGR2RGB),acc,name]
+        img = cv2.imread(file_path)
+        if img is None:
+            continue
+        a = [cv2.cvtColor(img,cv2.COLOR_BGR2RGB),acc,name]
         mubiao[name] = a
     return mubiao
 

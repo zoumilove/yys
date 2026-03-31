@@ -19,6 +19,7 @@ class Worker(QObject):
             'qiling_jl': '奖励结算',
             'qiling_sj': '点击空白区域',
             'qiling_fq': '放弃结契',
+            'lt_xz': '选择',
             'lt_ks': '开始',
             'lt_jg': '进攻',
             'lt_jl': '结算',
@@ -94,18 +95,6 @@ class Worker(QObject):
     def liaotufunc(self):
         cishu=0
         new_msg = ""
-        # # 截取模拟器屏幕 查看图片内容
-        # import cv2,pyautogui
-        # screen=action.screenshot(self.thread_id)
-        # import numpy as np
-        # frame = np.array(screen)
-        # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
-        # # # 显示图像
-        # cv2.imshow('Screenshot', frame)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        # return
         flag_list = {
             'lt_xz':False,
             'lt_ks':False,
@@ -115,47 +104,55 @@ class Worker(QObject):
         flagNum = 0
 
         while self.isRunning:   #直到取消，或者出错
-            #截屏
-            screen=action.screenshot(self.thread_id)
-            for i in ['lt_xz','lt_ks','lt_jg','qiling_jl']:
-                want=self.imgs[i]
-                size = want[0].shape
-                h, w , ___ = size
-                target=screen
-                pts=action.locate(target,want,0)
-                if not flag_list[i]:
-                    if not len(pts)==0:
-                        self.message_output(f"当前点击事件：{i}({self.click_name[i]})")
-                        self.message_output(f"识别到的坐标点:{pts}")
-                        # self.message_output(f"长度:{len(pts)}")
-                        
-                        if i=='lt_ks' or i == 'lt_xz':
-                            cishu=cishu+1
-                            self.message_output('挑战次数：'+str(cishu))
+            try:
+                #截屏
+                screen=action.screenshot(self.thread_id)
+                for i in ['lt_xz','lt_ks','lt_jg','qiling_jl']:
+                    want=self.imgs[i]
+                    size = want[0].shape
+                    h, w , ___ = size
+                    target=screen
+                    pts=action.locate(target,want,0)
+                    if not flag_list[i]:
+                        if not len(pts)==0:
+                            self.message_output(f"当前点击事件：{i}({self.click_name[i]})")
+                            self.message_output(f"识别到的坐标点:{pts}")
+                            # self.message_output(f"长度:{len(pts)}")
 
-                        flag_list[i] = True
-                        flagNum = flagNum + 1
-                        # self.message_output(f"flagNum:{flagNum}")
+                            if i=='lt_ks' or i == 'lt_xz':
+                                flag_list['lt_ks'] = True
+                                flag_list['lt_xz'] = True
+                                cishu=cishu+1
+                                self.message_output('挑战次数：'+str(cishu))
 
-                        if i == 'qiling_jl':
-                            flag_list = {
-                                'lt_xz':False,
-                                'lt_ks':False,
-                                'lt_jg':False,
-                                'qiling_jl':False
-                            }
+                            flag_list[i] = True
+                            flagNum = flagNum + 1
+                            # self.message_output(f"flagNum:{flagNum}")
 
-                        #获取随机数 延迟点击
-                        random_time = self.random_time[i]
-                        t = random.randint(random_time[0], random_time[1]) / 100
-                        if cishu > self.cishu_max:
-                            self.message_output('进攻次数上限')
-                            return
-                        
-                        xy = action.cheat(pts[0], w, h-10 )
-                        action.touch(xy,self.thread_id)
-                        if self.sleep_fast(t): return
-                        break
+                            if i == 'qiling_jl':
+                                flag_list = {
+                                    'lt_xz':False,
+                                    'lt_ks':False,
+                                    'lt_jg':False,
+                                    'qiling_jl':False
+                                }
+
+                            #获取随机数 延迟点击
+                            random_time = self.random_time[i]
+                            t = random.randint(random_time[0], random_time[1]) / 100
+                            if cishu > self.cishu_max:
+                                self.message_output('进攻次数上限')
+                                return
+
+                            xy = action.cheat(pts[0], w, h-10 )
+                            action.touch(xy,self.thread_id)
+                            if self.sleep_fast(t): return
+                            break
+            except Exception as e:
+                import traceback
+                self.message_output(f"错误：{type(e).__name__}: {e}")
+                self.message_output(traceback.format_exc())
+                return
 
     ########################################################
     #御魂/御灵单刷
