@@ -27,14 +27,14 @@ class Worker(QObject):
 
         #随机范围
         self.random_time = {
-            'qiling_tz': [50, 150],
-            'qiling_jl': [60, 150],
-            'qiling_sj': [100, 150],
-            'qiling_fq': [100, 150],
-            'lt_ks': [100, 150],
-            'lt_xz': [100, 150],
-            'lt_jg': [100, 150],
-            'lt_jl': [100, 150],
+            'qiling_tz': [50, 100],
+            'qiling_jl': [60, 100],
+            'qiling_sj': [50, 100],
+            'qiling_fq': [50, 100],
+            'lt_ks': [50, 100],
+            'lt_xz': [50, 100],
+            'lt_jg': [50, 100],
+            'lt_jl': [50, 100],
         }
 
         self.event_list = {
@@ -174,9 +174,9 @@ class Worker(QObject):
                     if i == 'tiaozhan' or i=='tiaozhan2' or i=='tiaozhan3' or i=='tancha' or i=='yj_tz' or i=='hd_tz':
                         cishu=cishu+1
                         self.message_output('挑战次数：'+str(cishu)+'/'+str(self.cishu_max))
-                        t = random.randint(500,800) / 100
+                        t = random.randint(100, 120) / 100
                     else:
-                        t = random.randint(15,30) / 100
+                        t = random.randint(100, 120) / 100
                     if cishu>self.cishu_max:
                         self.message_output('进攻次数上限')
                         return
@@ -198,10 +198,10 @@ class Worker(QObject):
     TANSUO_CONFIG = {
         TansuoMode.SINGLE: {
             'count_key': 'tansuo',          # 计次图标
-            'map_targets': ['boss', 'jian', 'jian2', 'boss2', 'ts_baoxiang'],
-            'menu_targets': ['jujue', 'querenyuhun', 'tansuo', 'ying', 'jiangli', 'jixu', 'c28', 'ditu', 'ts_baoxiang', 'ts_hdjl'],
+            'map_targets': ['kb', 'jian2', 'boss', 'jian', 'boss2', 'ts_baoxiang', 'hdjl'],
+            'menu_targets': ['tansuo', 'jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'c28', 'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd', 'zd_tz', 'kb', 'zd_tz2', 'hdjl'],
             'need_move': True,              # 需要随机移动
-            'need_exit': True,              # 需要退出探索
+            'need_exit': False,              # 需要退出探索
             'max_refresh': 3000,
             'max_move': 3000,
         },
@@ -233,27 +233,27 @@ class Worker(QObject):
         last_click = ''
         move_count = 0
         boss_done = False
-        move_directions = [(600, 180), (600, 180), (600, 200), (600, 180), (600, 200), (600, 200)]
+        move_directions = [(580, 250), (580, 250), (580, 250), (580, 250), (580, 250), (580, 250)]
 
         while self.isRunning:
             screen = action.screenshot(self.thread_id)
 
-            # 单刷专属：退出确认
-            if mode == self.TansuoMode.SINGLE:
-                pts = action.locate(screen, self.imgs.get('queren', [None]), 0)
-                if pts:
-                    self.message_output('确认退出')
-                    h, w = self.imgs['queren'][0].shape[:-1]
-                    xy = action.cheat(pts[1] if len(pts) > 1 else pts[0], w, h)
-                    action.touch(xy, self.thread_id)
-                    if self.sleep_fast(0.2): return
-                    continue
+            # # 单刷专属：退出确认
+            # if mode == self.TansuoMode.SINGLE:
+            #     pts = action.locate(screen, self.imgs.get('queren', [None]), 0)
+            #     if pts:
+            #         self.message_output('确认退出')
+            #         h, w = self.imgs['queren'][0].shape[:-1]
+            #         xy = action.cheat(pts[1] if len(pts) > 1 else pts[0], w, h)
+            #         action.touch(xy, self.thread_id)
+            #         if self.sleep_fast(0.2): return
+            #         continue
 
             # 地图中小怪检测
             if action.locate(screen, self.imgs['guding'], 0):
                 found, pts, h, w = self._find_img(screen, cfg['map_targets'])
-                if not found:
-                    self.message_output(f'地图无目标,need_move={cfg["need_move"]},boss_done={boss_done}')
+                # if not found:
+                #     self.message_output(f'地图无目标,need_move={cfg["need_move"]},boss_done={boss_done}')
                 if found:
                     # if 'boss' in found:
                         # boss_done = True
@@ -270,26 +270,14 @@ class Worker(QObject):
 
                 # 地图中未找到目标
                 if cfg['need_move']:
-                    if not boss_done:
-                        move_count += 1
-                        if move_count > cfg['max_move']:
-                            self.message_output('移动次数过多，尝试退出探索')
-                            # boss_done = True
-                            if not cfg['need_exit']: continue
-                        direction = random.choice(move_directions)
-                        self.message_output(f'移动至:{direction}')
-                        xy = action.cheat(direction, 30, 30)
-                        action.touch(xy, self.thread_id)
-                        if self.sleep_fast(0.3): return
-                    elif cfg['need_exit']:
-                        pts = action.locate(screen, self.imgs.get('tuichu', [None]), 0)
-                        if pts:
-                            self.message_output('退出探索')
-                            xy = action.cheat(pts[0], w, h)
-                            action.touch(xy, self.thread_id)
-                            if self.sleep_fast(0.6): return
-                            boss_done = False
-                            move_count = 0
+                    move_count += 1
+                    direction = (700, 520)
+                    self.message_output(f'移动至:{direction}')
+                    self.message_output(f"ADB状态: {action.adb_enable[self.thread_id]}, 设备: {action.devices_tab[self.thread_id]}")
+                    xy = action.cheat(direction, 30, 30)
+                    self.message_output(f"点击坐标: {xy}")
+                    action.touch(xy, self.thread_id)
+                    if self.sleep_fast(0.5): return
                 # 检测到guding时表示在地图界面，无论是否找到目标都continue
                 # 避免在地图上时误触菜单按钮
                 continue
