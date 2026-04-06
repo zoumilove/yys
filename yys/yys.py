@@ -52,7 +52,8 @@ class Worker(QObject):
         {'description':'5 御魂司机','func_name':self.yuhunfunc1,'count_default':3000},\
         {'description':'6 御魂打手','func_name':self.yuhunfunc2,'count_default':'inf'},\
         {'description':'7 探索组队（司机）','func_name':self.tansuo_driver_func,'count_default':3000},\
-        {'description':'8 探索组队（打手）','func_name':self.tansuo_fighter_func,'count_default':'inf'}]
+        {'description':'8 探索组队（打手）','func_name':self.tansuo_fighter_func,'count_default':'inf'},\
+        {'description':'9 当期爬塔（大富翁）','func_name':self.activity_func,'count_default':'inf'}]
         #功能序号
         self.index=index
         self.cishu_max=cishu_max
@@ -199,7 +200,7 @@ class Worker(QObject):
         TansuoMode.SINGLE: {
             'count_key': 'tansuo',          # 计次图标
             'map_targets': ['kb', 'jian2', 'boss', 'jian', 'boss2', 'ts_baoxiang', 'hdjl'],
-            'menu_targets': ['tansuo', 'jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'c28', 'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd', 'zd_tz', 'kb', 'zd_tz2', 'hdjl'],
+            'menu_targets': ['tansuo', 'jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'c28', 'c5','c3', 'c4','c2',  'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd', 'zd_tz', 'kb', 'zd_tz2', 'hdjl'],
             'need_move': True,              # 需要随机移动
             'need_exit': False,              # 需要退出探索
             'max_refresh': 3000,
@@ -208,7 +209,7 @@ class Worker(QObject):
         TansuoMode.DRIVER: {
             'count_key': 'tansuo',
             'map_targets': ['kb', 'jian2', 'boss', 'jian', 'boss2', 'ts_baoxiang', 'hdjl'],
-            'menu_targets': ['tansuo', 'jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'c28', 'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd', 'zd_tz', 'kb', 'zd_tz2', 'hdjl'],
+            'menu_targets': ['tansuo', 'jujue', 'querenyuhun', 'ying', 'jiangli', 'jixu', 'c28', 'c5','c3', 'c4','c2', 'ditu', 'ts_baoxiang', 'ts_hdjl', 'zd_qd', 'zd_tz', 'kb', 'zd_tz2', 'hdjl'],
             'need_move': True,
             'need_exit': False,
             'max_refresh': 3000,
@@ -233,7 +234,7 @@ class Worker(QObject):
         last_click = ''
         move_count = 0
         boss_done = False
-        move_directions = [(580, 250), (580, 250), (580, 250), (580, 250), (580, 250), (580, 250)]
+        move_directions = [(600, 520), (600, 540), (600, 520), (650, 540), (700, 520), (750, 540), (800, 520), (800, 540)]
 
         while self.isRunning:
             screen = action.screenshot(self.thread_id)
@@ -271,7 +272,7 @@ class Worker(QObject):
                 # 地图中未找到目标
                 if cfg['need_move']:
                     move_count += 1
-                    direction = (700, 520)
+                    direction = random.choice(move_directions)
                     self.message_output(f'移动至:{direction}')
                     self.message_output(f"ADB状态: {action.adb_enable[self.thread_id]}, 设备: {action.devices_tab[self.thread_id]}")
                     xy = action.cheat(direction, 30, 30)
@@ -424,3 +425,35 @@ class Worker(QObject):
 
 
 
+    #当期爬塔（大富翁）
+    def activity_func(self):
+        while self.isRunning:   #直到取消，或者出错
+            #截屏
+            screen=action.screenshot(self.thread_id)
+            for i in ['ac_qd2','ac_qd','ac_boss','ac_tz','ac_ks','ac_jl','ac_sl','ac_sz','ac_t1','ac_t2','ac_t3','ac_t4','ac_t5','ac_tc','ac_close']:
+                want=self.imgs[i]
+                size = want[0].shape
+                h, w , ___ = size
+                target=screen
+                pts=action.locate(target,want,0)
+                if not len(pts)==0:
+                    if i == 'ac_boss':#如果是boss界面 点击返回
+                        want=self.imgs['ac_tcc']
+                        size = want[0].shape
+                        h, w , ___ = size
+                        target=screen
+                        pts=action.locate(target,want,0)
+                        t = random.randint(100, 140) / 100
+                        xy = action.cheat(pts[0], w, h-10 )
+                        self.message_output(f'点击{i}')
+                        action.touch(xy,self.thread_id)
+                        if self.sleep_fast(t): return
+                        break
+
+                    #self.message_output('重复次数：',refresh)
+                    t = random.randint(100, 140) / 100
+                    xy = action.cheat(pts[0], w, h-10 )
+                    self.message_output(f'点击{i}')
+                    action.touch(xy,self.thread_id)
+                    if self.sleep_fast(t): return
+                    continue
