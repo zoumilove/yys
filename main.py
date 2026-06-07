@@ -10,7 +10,6 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QMainWindow,
     QTabWidget,
-    QVBoxLayout,
     QDialog,
 )
 from PyQt6.QtCore import QThread,pyqtSignal,QProcess,QMutex,Qt
@@ -51,7 +50,7 @@ class MainWindow(QMainWindow):
         self.tab=[None]*self.nthread
         self.tabWidget = QTabWidget()
         self.threads=[None]*self.nthread
-        self.workers=[game.Worker()]*self.nthread
+        self.workers=[game.Worker() for _ in range(self.nthread)]
         self.t_start=[None]*self.nthread
         self.isRunning=[False]*self.nthread
         # Create tabs and load the same UI file into each
@@ -261,7 +260,7 @@ if __name__ == '__main__':
     parser.add_argument('-debug', '--debug', type=int, help='Debug模式')
     args = parser.parse_args()
     #debug模式
-    if config['general']['debug'].lower() in ['true', '1', 'yes'] or args.debug['general']['debug'].lower() in ['true', '1', 'yes']:
+    if config['general']['debug'].lower() in ['true', '1', 'yes'] or args.debug == 1:
         import faulthandler
         try:
             faulthandler.enable()

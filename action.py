@@ -15,6 +15,8 @@ adb_path=None
 scalar=False
 scaling_factor=1
 monitor=None
+sct_instance=None  # MSS实例缓存
+_imgs_cache={}     # 图片模板全局缓存
 #截屏，并裁剪以加速
 upleft = (0, 0)
 downright = (1136, 700)
@@ -207,23 +209,22 @@ def screenshot(thread_id):
             else:
                 screen = cv2.imdecode(image_array,cv2.IMREAD_COLOR)
     else:
-        #桌面版截屏
-        with mss.mss() as sct:
-            if scalar:
-                #{"top": b, "left": a, "width": c, "height": d}
-                #shrink monitor to half due to macOS default DPI scaling
-                monitor2=copy.deepcopy(monitor)
-                monitor2["width"]=int(monitor2["width"]*scaling_factor)
-                monitor2["height"]=int(monitor2["height"]*scaling_factor)
-                screen=sct.grab(monitor2)
-                #mss.tools.to_png(screen.rgb, screen.size, output="screenshot.png")
-                screen = numpy.array(screen)
-                #textBrowser.append('Screen size: ',screen.shape)
-                #MuMu助手默认拉伸4/3倍
-                screen = cv2.resize(screen, (int(screen.shape[1]*0.75), int(screen.shape[0]*0.75)),
-                                    interpolation = cv2.INTER_LINEAR)
-            else:
-                screen = numpy.array(sct.grab(monitor))
+        #桌面版截屏（复用MSS实例）
+        global sct_instance
+        if sct_instance is None:
+            sct_instance = mss.mss()
+        if scalar:
+            #shrink monitor to half due to macOS default DPI scaling
+            monitor2=copy.deepcopy(monitor)
+            monitor2["width"]=int(monitor2["width"]*scaling_factor)
+            monitor2["height"]=int(monitor2["height"]*scaling_factor)
+            screen=sct_instance.grab(monitor2)
+            screen = numpy.array(screen)
+            #MuMu助手默认拉伸4/3倍
+            screen = cv2.resize(screen, (int(screen.shape[1]*0.75), int(screen.shape[0]*0.75)),
+                                interpolation = cv2.INTER_LINEAR)
+        else:
+            screen = numpy.array(sct_instance.grab(monitor))
 
     #all else failed
     if screen is None:
@@ -247,7 +248,7 @@ def locate(target,want, show=bool(0), msg=bool(0)):
     #textBrowser.append(location)
 
     if msg:  #显示正式寻找目标名称，调试时开启
-        textBrowser.append(c_name,'searching... ')
+        print(c_name,'searching... ')
 
     h,w=want_img.shape[:-1]
 
@@ -258,22 +259,17 @@ def locate(target,want, show=bool(0), msg=bool(0)):
             continue
         ex,ey=x,y
 
-        cv2.circle(target,(x,y),10,(0,0,255),3)
-
         if msg:
-            textBrowser.append(c_name,'we find it !!! ,at',x,y)
+            print(c_name,'we find it !!! ,at',x,y)
 
-        if scalar:
-            x,y=int(x*scaling_factor),int(y*scaling_factor)
-        else:
-            x,y=int(x),int(y)
+        x,y=int(x),int(y)
             
         loc_pos.append([x,y])
 
     if show:  #在图上显示寻找的结果，调试时开启
-        textBrowser.append('Debug: show action.locate')
+        print(f'Debug: locate {c_name}, found {len(loc_pos)} matches')
         cv2.imshow('we get',target)
-        cv2.waitKey(0) 
+        cv2.waitKey(0)
         cv2.destroyAllWindows()
 
     if len(loc_pos)==0:
@@ -283,8 +279,11 @@ def locate(target,want, show=bool(0), msg=bool(0)):
     return loc_pos
 
 
-#按【文件内容，匹配精度，名称】格式批量聚聚要查找的目标图片，精度统一为0.95，名称为文件名
+#按【文件内容，匹配精度，名称】格式批量加载要查找的目标图片，精度统一为0.95，名称为文件名
 def load_imgs(game_name):
+    global _imgs_cache
+    if game_name in _imgs_cache:
+        return _imgs_cache[game_name]
     mubiao = {}
     acc=0.95
     path = os.path.join(get_base_path(), game_name, 'png')
@@ -294,11 +293,12 @@ def load_imgs(game_name):
             continue
         name = file.split('.')[0]
         file_path = path + '/' + file
-        img = cv2.imread(file_path)
+        img = cv2.imread(file_path, cv2.IMREAD_COLOR)
         if img is None:
             continue
-        a = [cv2.cvtColor(img,cv2.COLOR_BGR2RGB),acc,name]
-        mubiao[name] = a
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        mubiao[name] = [img, acc, name]
+    _imgs_cache[game_name] = mubiao
     return mubiao
 
 #蜂鸣报警器，参数n为鸣叫次数
@@ -326,10 +326,7 @@ def cut(screen,upleft,downright):
 #随机偏移坐标，防止游戏的外挂检测。p是原坐标，w、n是目标图像宽高，返回目标范围内的一个随机坐标
 def cheat(p, w, h):
     a,b = p
-    if scalar:
-        w, h = int(w/6), int(h/6)
-    else:
-        w, h = int(w/6), int(h/6)
+    w, h = int(w/6), int(h/6)
     if h<0:
         h=1
     c,d = random.randint(-w, w),random.randint(-h, h)

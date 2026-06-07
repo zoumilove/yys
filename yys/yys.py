@@ -53,7 +53,8 @@ class Worker(QObject):
         {'description':'6 御魂打手','func_name':self.yuhunfunc2,'count_default':'inf'},\
         {'description':'7 探索组队（司机）','func_name':self.tansuo_driver_func,'count_default':3000},\
         {'description':'8 探索组队（打手）','func_name':self.tansuo_fighter_func,'count_default':'inf'},\
-        {'description':'9 当期爬塔（大富翁）','func_name':self.activity_func,'count_default':'inf'}]
+        {'description':'9 当期爬塔（大富翁）','func_name':self.activity_func,'count_default':'inf'},\
+        {'description':'10 新号自动主线剧情','func_name':self.aotoNewbiePlot_func,'count_default':'inf'}]
         #功能序号
         self.index=index
         self.cishu_max=cishu_max
@@ -95,60 +96,40 @@ class Worker(QObject):
     #   寮突
     def liaotufunc(self):
         cishu=0
-        new_msg = ""
-        flag_list = {
-            'lt_xz':False,
-            'lt_ks':False,
-            'lt_jg':False,
-            'qiling_jl':False
-        }
-        flagNum = 0
+        # lt_xz/lt_ks 每轮只点一次，lt_jg/qiling_jl 可重复点击
+        started = False
 
-        while self.isRunning:   #直到取消，或者出错
+        while self.isRunning:
             try:
-                #截屏
                 screen=action.screenshot(self.thread_id)
-                for i in ['lt_xz','lt_ks','lt_jg','qiling_jl']:
-                    want=self.imgs[i]
-                    size = want[0].shape
-                    h, w , ___ = size
-                    target=screen
-                    pts=action.locate(target,want,0)
-                    if not flag_list[i]:
-                        if not len(pts)==0:
-                            self.message_output(f"当前点击事件：{i}({self.click_name[i]})")
-                            self.message_output(f"识别到的坐标点:{pts}")
-                            # self.message_output(f"长度:{len(pts)}")
+                # 已开始后从搜索列表中移除选择/开始，确保进攻/结算能被匹配到
+                if started:
+                    targets = ['lt_jg','qiling_jl']
+                else:
+                    targets = ['lt_xz','lt_ks','lt_jg','qiling_jl']
+                name, pts, h, w = self._match_first(screen, targets)
+                if name is None:
+                    continue
 
-                            if i=='lt_ks' or i == 'lt_xz':
-                                flag_list['lt_ks'] = True
-                                flag_list['lt_xz'] = True
-                                cishu=cishu+1
-                                self.message_output('挑战次数：'+str(cishu))
+                self.message_output(f"当前点击事件：{name}({self.click_name[name]})")
+                self.message_output(f"识别到的坐标点:{pts}")
 
-                            flag_list[i] = True
-                            flagNum = flagNum + 1
-                            # self.message_output(f"flagNum:{flagNum}")
+                if name=='lt_ks' or name=='lt_xz':
+                    started = True
+                    cishu+=1
+                    self.message_output('挑战次数：'+str(cishu))
 
-                            if i == 'qiling_jl':
-                                flag_list = {
-                                    'lt_xz':False,
-                                    'lt_ks':False,
-                                    'lt_jg':False,
-                                    'qiling_jl':False
-                                }
+                if name == 'qiling_jl':
+                    started = False
 
-                            #获取随机数 延迟点击
-                            random_time = self.random_time[i]
-                            t = random.randint(random_time[0], random_time[1]) / 100
-                            if cishu > self.cishu_max:
-                                self.message_output('进攻次数上限')
-                                return
+                t = random.randint(*self.random_time[name]) / 100
+                if cishu > self.cishu_max:
+                    self.message_output('进攻次数上限')
+                    return
 
-                            xy = action.cheat(pts[0], w, h-10 )
-                            action.touch(xy,self.thread_id)
-                            if self.sleep_fast(t): return
-                            break
+                xy = action.cheat(pts, w, h-10)
+                action.touch(xy, self.thread_id)
+                if self.sleep_fast(t): return
             except Exception as e:
                 import traceback
                 self.message_output(f"错误：{type(e).__name__}: {e}")
@@ -158,33 +139,9 @@ class Worker(QObject):
     ########################################################
     #御魂/御灵单刷
     def yuhunfunc(self):
-        cishu=0
-        while self.isRunning:   #直到取消，或者出错
-            #截屏
-            screen=action.screenshot(self.thread_id)
-            for i in ['jujue','querenyuhun','zhidao','ying','jiangli','jiangli2','jixu','zhunbei','guanbi',\
-                      'tiaozhan','tiaozhan2','tiaozhan3','queding','tancha','shibai','yj_tz','hd_tz']:
-                want=self.imgs[i]
-                size = want[0].shape
-                h, w , ___ = size
-                target=screen
-                pts=action.locate(target,want,0)
-                if not len(pts)==0:
-                    #self.message_output('重复次数：',refresh)
-                    self.message_output(i)
-                    if i == 'tiaozhan' or i=='tiaozhan2' or i=='tiaozhan3' or i=='tancha' or i=='yj_tz' or i=='hd_tz':
-                        cishu=cishu+1
-                        self.message_output('挑战次数：'+str(cishu)+'/'+str(self.cishu_max))
-                        t = random.randint(100, 120) / 100
-                    else:
-                        t = random.randint(100, 120) / 100
-                    if cishu>self.cishu_max:
-                        self.message_output('进攻次数上限')
-                        return
-                    xy = action.cheat(pts[0], w, h-10 )
-                    action.touch(xy,self.thread_id)
-                    if self.sleep_fast(t): return
-                    break
+        img_list = ['jujue','querenyuhun','zhidao','ying','jiangli','jiangli2','jixu','zhunbei','guanbi',
+                     'tiaozhan','tiaozhan2','tiaozhan3','queding','tancha','shibai','yj_tz','hd_tz']
+        self._yuhun_common(img_list)
 
     #============================================================
     # 探索模块 - 配置定义
@@ -233,7 +190,6 @@ class Worker(QObject):
         refresh = 0
         last_click = ''
         move_count = 0
-        boss_done = False
         move_directions = [(600, 520), (600, 540), (600, 520), (650, 540), (700, 520), (750, 540), (800, 520), (800, 540)]
 
         while self.isRunning:
@@ -253,14 +209,9 @@ class Worker(QObject):
             # 地图中小怪检测
             if action.locate(screen, self.imgs['guding'], 0):
                 found, pts, h, w = self._find_img(screen, cfg['map_targets'])
-                # if not found:
-                #     self.message_output(f'地图无目标,need_move={cfg["need_move"]},boss_done={boss_done}')
                 if found:
-                    # if 'boss' in found:
-                        # boss_done = True
                     if cfg['need_exit'] and refresh > 3:
                         self.message_output('重复点击过多，退出')
-                        # boss_done = True
                     else:
                         self.message_output(f'点击{found}')
                         xy = action.cheat(pts, w, h)
@@ -314,6 +265,18 @@ class Worker(QObject):
                 return name, pts[0], h, w
         return None, None, None, None
 
+    def _match_first(self, screen, names):
+        """在screen中查找names列表中第一个匹配的图像，返回(name, pts, h, w)或(None, None, None, None)"""
+        for name in names:
+            want = self.imgs.get(name)
+            if want is None:
+                continue
+            pts = action.locate(screen, want, 0)
+            if pts:
+                h, w = want[0].shape[:-1]
+                return name, pts[0], h, w
+        return None, None, None, None
+
     def tansuo_driver_func(self):
         """探索组队（司机）"""
         self._tansuo_loop(self.TansuoMode.DRIVER)
@@ -336,50 +299,23 @@ class Worker(QObject):
     #   3.结契成功（继续挑战）
     def qilingfunc(self):
         cishu=0
-        new_msg = ""
-        # 截取模拟器屏幕 查看图片内容
-        # import cv2,pyautogui
-        # screen=action.screenshot(self.thread_id)
-        # import numpy as np
-        # frame = np.array(screen)
-        # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
-        # # 显示图像
-        # cv2.imshow('Screenshot', frame)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        # return
-
-        while self.isRunning:   #直到取消，或者出错
-            #截屏
+        while self.isRunning:
             screen=action.screenshot(self.thread_id)
-            for i in self.event_list['qiling']:
-                want=self.imgs[i]
-                size = want[0].shape
-                h, w , ___ = size
-                target=screen
-                pts=action.locate(target,want,0)
-                if not len(pts)==0:
-                    self.message_output(f"当前点击事件：{i}({self.click_name[i]})")
-                    self.message_output(f"识别到的坐标点:{pts}")
-                    self.message_output(f"长度:{len(pts)}")
-                    
-                    if i=='qiling_tz':
-                        cishu=cishu+1
-                        self.message_output('挑战次数：'+str(cishu)+'/'+str(self.cishu_max))
-
-                    #获取随机数 延迟点击
-                    random_time = self.random_time[i]
-                    t = random.randint(random_time[0], random_time[1]) / 100
-                    if cishu > self.cishu_max:
-                        self.message_output('进攻次数上限')
-                        return
-                    
-                    xy = action.cheat(pts[0], w, h-10 )
-                    action.touch(xy,self.thread_id)
-                    if self.sleep_fast(t): return
-                    break
-
+            name, pts, h, w = self._match_first(screen, self.event_list['qiling'])
+            if name is None:
+                continue
+            self.message_output(f"当前点击事件：{name}({self.click_name[name]})")
+            self.message_output(f"识别到的坐标点:{pts}")
+            if name=='qiling_tz':
+                cishu+=1
+                self.message_output('挑战次数：'+str(cishu)+'/'+str(self.cishu_max))
+            t = random.randint(*self.random_time[name]) / 100
+            if cishu > self.cishu_max:
+                self.message_output('进攻次数上限')
+                return
+            xy = action.cheat(pts, w, h-10)
+            action.touch(xy, self.thread_id)
+            if self.sleep_fast(t): return
 
 
     #御魂司机
@@ -396,7 +332,7 @@ class Worker(QObject):
 
     def _yuhun_common(self, img_list):
         cishu = 0
-        tiaozhan_set = {'tiaozhan', 'tiaozhan2', 'tiaozhan3', 'tancha'}
+        tiaozhan_set = {'tiaozhan', 'tiaozhan2', 'tiaozhan3', 'tancha', 'yj_tz', 'hd_tz'}
 
         while self.isRunning:
             screen = action.screenshot(self.thread_id)
@@ -443,6 +379,9 @@ class Worker(QObject):
                         h, w , ___ = size
                         target=screen
                         pts=action.locate(target,want,0)
+                        if not pts:
+                            self.message_output('未找到退出按钮，跳过')
+                            break
                         t = random.randint(100, 140) / 100
                         xy = action.cheat(pts[0], w, h-10 )
                         self.message_output(f'点击{i}')
@@ -450,10 +389,28 @@ class Worker(QObject):
                         if self.sleep_fast(t): return
                         break
 
-                    #self.message_output('重复次数：',refresh)
                     t = random.randint(100, 140) / 100
                     xy = action.cheat(pts[0], w, h-10 )
                     self.message_output(f'点击{i}')
                     action.touch(xy,self.thread_id)
                     if self.sleep_fast(t): return
-                    continue
+                    break
+
+    #新号 自动主线剧情
+    def aotoNewbiePlot_func(self):
+        while self.isRunning:   #直到取消，或者出错
+            #截屏
+            screen=action.screenshot(self.thread_id)
+            for i in ['t_zh','t_jump', 't_dot','t_kongbai','t_dot2','t_quick','t_dot3','t_continue','t_fight','t_reward1','t_eyes','t_question','t_win','t_end','t_dotcommon','t_preparation','t_dotmini']:
+                want=self.imgs[i]
+                size = want[0].shape
+                h, w , ___ = size
+                target=screen
+                pts=action.locate(target,want,0)
+                if not len(pts)==0:
+                    t = random.randint(100, 140) / 100
+                    xy = action.cheat(pts[0], w, h-10 )
+                    self.message_output(f'点击{i}')
+                    action.touch(xy,self.thread_id)
+                    if self.sleep_fast(t): return
+                    break

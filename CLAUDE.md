@@ -32,10 +32,12 @@ pip install pyqt6 opencv-python numpy mss pyautogui pyinstaller
 
 ```
 main.py          # PyQt6 GUI - creates tabs, threads, handles UI events
+main.ui          # PyQt6 UI layout file (loaded via loadUi)
 action.py        # Core automation layer - screenshot, touch, swipe, image matching
 yys/yys.py       # Game-specific Worker class with task functions (dungeon, exploration, etc.)
 yys/png/         # Template images for OpenCV matching (tiaozhan.png, jiangli.png, etc.)
 config.ini       # Thread count, debug mode, game name
+yys_script.spec  # PyInstaller build spec
 ```
 
 ### Core Flow / 核心流程
@@ -68,6 +70,19 @@ Templates in `yys/png/` are matched with 0.95 threshold. Key templates:
 When a new event tower (爬塔) starts, recapture `hd_tz.png` by: run screenshot function → manually crop the challenge button → save to `yys/png/hd_tz.png`.
 新活动爬塔开始时，更新 `hd_tz.png`：运行截图功能 → 手动裁剪挑战按钮区域 → 保存到 `yys/png/hd_tz.png`。
 
+### macOS Scaling / macOS 缩放
+On macOS, `mss` captures at half DPI by default. The code applies `scaling_factor=1/2` and resizes the capture back to 1136x700 via `cv2.resize`. ADB mode does not need this scaling.
+
+### Helper Scripts / 辅助脚本
+- `check_mumu.py` - diagnose MuMu emulator ADB connectivity (checks installation paths, devices, ports)
+- `extra/test.py` - benchmark screenshot methods (mss vs PIL vs pyscreenshot)
+- `extra/region.py` - quick test for mss screen capture region
+
+### Game Variants / 游戏变体
+The script supports multiple games via `config.ini` `game` setting or `-game` CLI flag:
+- `yys` - 阴阳师 (default)
+- `nsh` - another game variant (via `start_nsh.bat`)
+
 ### Game Settings / 游戏设置
 Disable "战斗结算个性化" in-game to prevent stuck on completion screen.
 关闭游戏内"战斗结算个性化"选项，避免卡在结算界面。
@@ -75,7 +90,7 @@ Disable "战斗结算个性化" in-game to prevent stuck on completion screen.
 ## Configuration / 配置
 
 `config.ini`:
-- `Nthread` - number of concurrent game tabs (default 5) / 并发标签页数量（默认 5）
+- `Nthread` - number of concurrent game tabs (default 8) / 并发标签页数量（默认 8）
 - `debug` - enable debug mode / 开启调试模式
 - `game` - game folder name (default `yys`) / 游戏文件夹名（默认 `yys`）
 
@@ -92,3 +107,5 @@ Each task function is defined in `Worker.func` list with description and default
 6. 御魂打手 (souls fighter) / 御魂打手
 7. 探索组队司机 (exploration driver) / 探索组队司机
 8. 探索组队打手 (exploration fighter) / 探索组队打手
+9. 当期爬塔（大富翁）(current event tower / Rich Man) / 当期爬塔（大富翁）
+10. 新号自动主线剧情 (auto newbie main story) / 新号自动主线剧情
