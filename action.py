@@ -1,6 +1,6 @@
 import cv2,time,os,random,sys,mss,copy,subprocess,pyautogui
 import numpy
-from PyQt6.QtWidgets import QMessageBox,QPushButton,QInputDialog
+from PyQt6.QtWidgets import QMessageBox,QPushButton
 
 # 获取资源基础路径（兼容打包后的exe）
 def get_base_path():
@@ -45,28 +45,43 @@ def startup(window):
     #检测ADB
     if sys.platform=='win32':
         textBrowser.append('检测模拟器')
-        mumu_path="D:\\mumu\\MuMuPlayer\\nx_main\\adb.exe"
+        mumu_paths=[
+            "D:\\mumu\\MuMuPlayer\\nx_main\\adb.exe",
+            "C:\\Program Files\\Netease\\MuMuPlayer-12.0\\shell\\adb.exe",
+            "D:\\Program Files\\Netease\\MuMuPlayer-12.0\\shell\\adb.exe",
+        ]
         ld_path="C:\\leidian\\LDPlayer9\\adb.exe"
         if os.path.isfile(ld_path):
             textBrowser.append('检测到雷电模拟器')
             adb_path=ld_path
-        elif os.path.isfile(mumu_path):
-            textBrowser.append('检测到MuMu模拟器')
-            adb_path=mumu_path
-            #获取端口信息
-            port, ok = QInputDialog.getInt(window, '模拟器端口', '输入MuMu模拟器端口（默认16384）：',16384,0,65535,1)
-            if ok:
-                textBrowser.append('模拟器端口：'+str(port))
-                mumu_ip='127.0.0.1:'+str(port)
-                comm=[adb_path,'connect',mumu_ip]
-                out=subprocess.run(comm,shell=False,capture_output=True,check=False)
-                out=out.stdout.decode('utf-8')
-                textBrowser.append(out)
         else:
-            #无模拟器
-            textBrowser.append('未找到ADB安装路径，尝试使用PATH启动ADB')
-            adb_path='adb'
-            out=''
+            mumu_path=next((p for p in mumu_paths if os.path.isfile(p)), None)
+            if mumu_path:
+                textBrowser.append('检测到MuMu模拟器')
+                adb_path=mumu_path
+                #自动扫描MuMu端口（起始端口不固定，每个实例+32，扫描42个）
+                from PyQt6.QtWidgets import QApplication
+                connected = False
+                for port in range(16384, 16384+32*42, 32):
+                    mumu_ip='127.0.0.1:'+str(port)
+                    comm=[adb_path,'connect',mumu_ip]
+                    try:
+                        out=subprocess.run(comm,shell=False,capture_output=True,check=False,timeout=1)
+                        out_str=out.stdout.decode('utf-8')
+                    except subprocess.TimeoutExpired:
+                        continue
+                    if 'connected' in out_str.lower() and 'cannot' not in out_str.lower():
+                        textBrowser.append(f'成功连接 MuMu 端口 {port}')
+                        connected = True
+                        break
+                    QApplication.processEvents()  # 保持UI响应
+                if not connected:
+                    textBrowser.append('未找到可用的MuMu模拟器端口')
+            else:
+                #无模拟器
+                textBrowser.append('未找到ADB安装路径，尝试使用PATH启动ADB')
+                adb_path='adb'
+                out=''
     else:
         adb_path='adb'
 
